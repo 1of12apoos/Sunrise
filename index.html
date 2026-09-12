@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, viewport-fit=cover">
 <title>Sunrise</title>
 <meta name="theme-color" content="#4F6B43">
 <meta name="color-scheme" content="light">
@@ -28,7 +28,8 @@
   --pad:16px; --r:22px;
   --shadow:0 6px 20px -12px rgba(74,55,30,.4);
 }
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+button,.row,.tabs .t,.barb,.qrow,.trio,.lab{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 html{background:#F8F2E9 !important;color-scheme:only light}
 html,body{margin:0;background:var(--cream);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased;
           forced-color-adjust:none;-webkit-text-fill-color:currentColor}
