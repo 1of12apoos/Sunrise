@@ -49,6 +49,22 @@ body::before{content:"";position:fixed;inset:-10vh -10vw;background:#F8F2E9;z-in
 .lab.mute{color:var(--faint);font-weight:600}
 .fieldlab{font-size:14px;font-weight:500;color:var(--dim);margin-bottom:7px}
 
+function quoteIndex(k){
+  const n=data.quotes.length;if(!n)return -1;
+  const d=Math.floor(new Date(k+'T00:00:00').getTime()/864e5);
+  return ((d+qPeek)%n+n)%n;
+}
+function paintQuote(k){
+  const card=$('quoteCard'),i=quoteIndex(k);
+  if(i<0){card.style.display='none';return}
+  card.style.display='block';
+  const q=data.quotes[i];
+  $('qText').textContent=q.t;
+  $('qAuthor').textContent=q.a||'';
+  $('qAuthor').style.display=q.a?'block':'none';
+  card.querySelector('.more').style.display=data.quotes.length>1?'block':'none';
+}
+
 /* ── sky ───────────────────────────────────────────────────────── */
 .sky{position:relative;height:232px;overflow:hidden;display:flex;flex-direction:column;
      padding:20px;border-radius:var(--r);margin-bottom:14px;box-shadow:var(--shadow);
@@ -101,6 +117,20 @@ body::before{content:"";position:fixed;inset:-10vh -10vw;background:#F8F2E9;z-in
               padding:13px 20px;border-radius:14px;align-self:center}
 .notice .x{flex:none;color:var(--peach-t);opacity:.6;font-size:19px;padding:4px 2px;align-self:center}
 
+.quotecard{background:var(--green-l);box-shadow:none;border:1px solid #DFE6D8;position:relative;
+           padding:22px 22px 20px;width:100%;text-align:left;display:block}
+.quotecard .qm{font-size:52px;line-height:.7;font-weight:800;color:var(--green);opacity:.28;height:26px}
+.quotecard p{margin:10px 0 0;font-size:16.5px;line-height:1.5;font-weight:500;color:var(--green-d)}
+.quotecard .auth{display:block;margin-top:12px;font-size:12px;font-weight:700;letter-spacing:.12em;
+                 text-transform:uppercase;color:var(--green);opacity:.75}
+.quotecard .more{position:absolute;top:16px;right:18px;font-size:12px;font-weight:700;color:var(--green);opacity:.45}
+.qrow{display:flex;gap:12px;align-items:flex-start;padding:13px 0;border-bottom:1px solid var(--line)}
+.qrow:last-child{border-bottom:0}
+.qrow .n{flex:none;width:22px;font-size:12px;font-weight:700;color:var(--faint);padding-top:2px}
+.qrow .qt{flex:1;font-size:14.5px;line-height:1.45;font-weight:500}
+.qrow .qa{display:block;font-size:12px;color:var(--faint);font-weight:600;margin-top:3px}
+.qrow .rm{flex:none;color:var(--faint);font-size:17px;padding:2px 4px}
+.qrow.now{background:var(--green-l);border-radius:12px;padding:13px 12px;border-bottom:0;margin:2px 0}
 .trio{display:flex;padding:18px 0}
 .trio div{flex:1;text-align:center;padding:0 6px}
 .trio div+div{border-left:1px solid var(--line)}
@@ -182,7 +212,7 @@ textarea{width:100%;height:92px;background:#fff;border:1px solid var(--line);bor
       backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--line);
       padding:9px 0 calc(7px + env(safe-area-inset-bottom))}
 .tabs .t{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint);
-         font-size:11.5px;font-weight:600;padding:4px 0;position:relative}
+         font-size:11px;font-weight:600;padding:4px 0;position:relative}
 .tabs .t.on{color:var(--green);font-weight:700}
 .tabs svg{width:23px;height:23px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .tabs .t .dot{position:absolute;top:2px;right:calc(50% - 16px);width:7px;height:7px;border-radius:50%;
@@ -226,6 +256,13 @@ textarea{width:100%;height:92px;background:#fff;border:1px solid var(--line);bor
         <button class="pill" id="nGo">Back up</button>
         <button class="x" id="nX" aria-label="Dismiss">✕</button>
       </div>
+
+      <button class="card quotecard" id="quoteCard" style="display:none">
+        <span class="more">↻</span>
+        <div class="qm">&ldquo;</div>
+        <p id="qText"></p>
+        <span class="auth" id="qAuthor"></span>
+      </button>
 
       <div class="card trio">
         <div><span class="lab">Streak</span><b class="g" id="tStreak">0</b></div>
@@ -291,6 +328,23 @@ textarea{width:100%;height:92px;background:#fff;border:1px solid var(--line);bor
     </div>
   </section>
 
+  <!-- ── QUOTES ── -->
+  <section class="view" id="vQuotes">
+    <header class="bar"><h1>Quotes</h1><p>One a day, then it loops</p></header>
+    <div class="body">
+      <div class="card">
+        <div class="chead"><span class="lab">Add quotes</span><span class="lab mute" id="qCount"></span></div>
+        <p class="fieldlab">One per line. Add the author after a dash if you want:<br><b>Discipline equals freedom — Jocko Willink</b></p>
+        <textarea id="qBulk" style="height:150px" placeholder="Paste as many as you like, one per line"></textarea>
+        <button class="cta" id="qAdd">Add to list</button>
+      </div>
+      <div class="card">
+        <div class="chead"><span class="lab">Your quotes</span><span class="lab mute">In order, day by day</span></div>
+        <div id="qList"></div>
+      </div>
+    </div>
+  </section>
+
   <!-- ── BACKUP ── -->
   <section class="view" id="vBackup">
     <header class="bar"><h1>Backup</h1><p>Everything lives on this phone only</p></header>
@@ -316,6 +370,7 @@ textarea{width:100%;height:92px;background:#fff;border:1px solid var(--line);bor
   <button class="t on" data-v="vToday"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6L17 7M7 17l-1.4 1.4"/></svg>Today</button>
   <button class="t" data-v="vRecord"><svg viewBox="0 0 24 24"><path d="M5 20v-7M12 20V4M19 20v-11"/></svg>Record</button>
   <button class="t" data-v="vHabits"><svg viewBox="0 0 24 24"><path d="M4 7h2.5M4 12h2.5M4 17h2.5M10 7h10M10 12h10M10 17h10"/></svg>Habits</button>
+  <button class="t" data-v="vQuotes"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M9.7 5.6C6.9 6.8 5 9.4 5 12.6V18h5.6v-5.6H8.1c.1-1.6.8-2.7 2.3-3.4zm9.3 0c-2.8 1.2-4.7 3.8-4.7 7V18H20v-5.6h-2.5c.1-1.6.8-2.7 2.3-3.4z"/></svg>Quotes</button>
   <button class="t" data-v="vBackup"><svg viewBox="0 0 24 24"><path d="M12 16V6M8.5 9.5L12 6l3.5 3.5M5 19h14"/></svg>Backup<span class="dot"></span></button>
 </nav>
 
@@ -342,7 +397,15 @@ const DEFAULTS=[
   {id:'passive',name:'Building passive income'}
 ];
 
-let data={v:1,habits:DEFAULTS.map(h=>({...h})),days:{},lastBackup:null};
+const SEED_QUOTES=[
+  {t:'You have power over your mind — not outside events. Realise this, and you will find strength.',a:'Marcus Aurelius'},
+  {t:'We suffer more often in imagination than in reality.',a:'Seneca'},
+  {t:'Well begun is half done.',a:'Aristotle'},
+  {t:'It does not matter how slowly you go, so long as you do not stop.',a:'Confucius'},
+  {t:'What we do now echoes in eternity.',a:'Marcus Aurelius'}
+];
+let data={v:1,habits:DEFAULTS.map(h=>({...h})),days:{},quotes:SEED_QUOTES.slice(),lastBackup:null};
+let qPeek=0;
 let cursor=today(),saveTimer,dismissed=false;
 const $=id=>document.getElementById(id);
 
@@ -404,6 +467,22 @@ function cheer(s,isT,st){
   return `${s.n} done — starting was the hard part.`;
 }
 
+function quoteIndex(k){
+  const n=data.quotes.length;if(!n)return -1;
+  const d=Math.floor(new Date(k+'T00:00:00').getTime()/864e5);
+  return ((d+qPeek)%n+n)%n;
+}
+function paintQuote(k){
+  const card=$('quoteCard'),i=quoteIndex(k);
+  if(i<0){card.style.display='none';return}
+  card.style.display='block';
+  const q=data.quotes[i];
+  $('qText').textContent=q.t;
+  $('qAuthor').textContent=q.a||'';
+  $('qAuthor').style.display=q.a?'block':'none';
+  card.querySelector('.more').style.display=data.quotes.length>1?'block':'none';
+}
+
 /* ── sky ──────────────────────────────────────────────────────── */
 const SKY=[{t:0,c:['#05060E','#0A0E2C','#191740']},{t:.35,c:['#0D0F2E','#372155','#753960']},
            {t:.7,c:['#282055','#8B4266','#DE875C']},{t:1,c:['#3E6DA8','#94A9D4','#FFD79B']}];
@@ -448,6 +527,7 @@ function render(){
   $('band').textContent=band(s.pct);
   $('cheer').textContent=cheer(s,isT,st);
   paint(s.pct);
+  paintQuote(k);
 
   $('tStreak').textContent=st.streak;
   $('tPerfect').textContent=st.perfect;
@@ -540,12 +620,39 @@ function renderRecord(){
   });
 }
 
+function renderQuotes(){
+  const n=data.quotes.length,today_i=quoteIndex(today());
+  $('qCount').textContent=n?n+(n===1?' quote':' quotes'):'None yet';
+  const el=$('qList');el.innerHTML='';
+  if(!n){el.innerHTML='<p class="hint" style="margin:0">Nothing yet. Paste a few above and one will show on the Today tab each morning.</p>';return}
+  data.quotes.forEach((q,i)=>{
+    const r=document.createElement('div');
+    r.className='qrow'+(i===today_i?' now':'');
+    r.innerHTML='<span class="n"></span><div class="qt"><span></span><span class="qa"></span></div><button class="rm">&times;</button>';
+    r.querySelector('.n').textContent=i===today_i?'●':(i+1);
+    r.querySelector('.qt span').textContent=q.t;
+    const a=r.querySelector('.qa');
+    a.textContent=q.a||'';if(!q.a)a.style.display='none';
+    r.querySelector('.rm').onclick=()=>{data.quotes.splice(i,1);queueSave();renderQuotes();render()};
+    el.appendChild(r);
+  });
+}
+const strip=x=>x.replace(/^["'\u201c\u2018]+|["'\u201d\u2019]+$/g,'').trim();
+function parseQuotes(text){
+  return text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean).map(line=>{
+    line=strip(line);
+    const m=line.match(/^(.*\S)\s+[\u2014\u2013-]{1,2}\s*([^\u2014\u2013]{2,60})$/);
+    return m?{t:strip(m[1]),a:strip(m[2])}:{t:line,a:''};
+  }).filter(q=>q.t);
+}
+
 /* ── views ────────────────────────────────────────────────────── */
 function show(v){
   document.querySelectorAll('.view').forEach(s=>s.classList.toggle('on',s.id===v));
   document.querySelectorAll('.tabs .t').forEach(t=>t.classList.toggle('on',t.dataset.v===v));
   if(v==='vRecord')renderRecord();
   if(v==='vHabits')renderEdit();
+  if(v==='vQuotes')renderQuotes();
   if(v==='vBackup')renderBackup();
   window.scrollTo(0,0);
 }
@@ -557,6 +664,16 @@ $('next').onclick=()=>{if(cursor<today()){cursor=shift(cursor,1);render()}};
 $('dateLabel').onclick=()=>{cursor=today();render()};
 ['bed','wake'].forEach(id=>$(id).onchange=e=>{day(cursor)[id]=e.target.value;queueSave();render()});
 $('nGo').onclick=()=>show('vBackup');
+$('quoteCard').onclick=()=>{if(data.quotes.length>1){qPeek++;paintQuote(cursor)}};
+$('qAdd').onclick=()=>{
+  const add=parseQuotes($('qBulk').value);
+  if(!add.length)return toast('Type or paste a quote first');
+  const seen=new Set(data.quotes.map(q=>q.t.toLowerCase()));
+  const fresh=add.filter(q=>!seen.has(q.t.toLowerCase()));
+  data.quotes=data.quotes.concat(fresh);
+  $('qBulk').value='';queueSave();renderQuotes();render();
+  toast(fresh.length?fresh.length+(fresh.length===1?' quote added':' quotes added'):'Already in your list');
+};
 $('nX').onclick=()=>{dismissed=true;render()};
 
 function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');
@@ -587,7 +704,7 @@ function renderBackup(){
   $('bkStatus').textContent=data.lastBackup
     ?'Last backup: '+new Date(data.lastBackup+'T00:00:00').toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'})
     :'No backup yet';
-  $('bkDetail').textContent=`${st.days} day${st.days===1?'':'s'} recorded · ${data.habits.length} habits · ${st.totalDone} completions`;
+  $('bkDetail').textContent=`${st.days} day${st.days===1?'':'s'} recorded · ${data.habits.length} habits · ${data.quotes.length} quotes · ${st.totalDone} completions`;
   $('backup').value=JSON.stringify(data);
 }
 const payload=()=>JSON.stringify({...data,exported:new Date().toISOString()},null,2);
@@ -617,9 +734,9 @@ function restore(text){
   if(!d||!Array.isArray(d.habits)||!d.days||typeof d.days!=='object')return toast('That isn’t a Sunrise backup');
   const inD=Object.keys(d.days).length,mine=Object.keys(data.days).length;
   if(!confirm(`Restore ${inD} recorded day${inD===1?'':'s'} and ${d.habits.length} habits?\n\nThis replaces what's on this device now (${mine} day${mine===1?'':'s'}).`))return;
-  data={v:1,habits:d.habits,days:d.days,lastBackup:d.lastBackup||null};
+  data={v:1,habits:d.habits,days:d.days,quotes:Array.isArray(d.quotes)?d.quotes:[],lastBackup:d.lastBackup||null};
   data.habits.forEach(h=>{if(h.id==='sleep8')h.auto='sleep'});
-  cursor=today();queueSave();renderEdit();renderBackup();renderRecord();render();toast('Restored');
+  cursor=today();queueSave();renderEdit();renderBackup();renderRecord();renderQuotes();render();toast('Restored');
 }
 $('copyBackup').onclick=async()=>{const t=$('backup');t.value=payload();t.select();
   try{await navigator.clipboard.writeText(t.value)}catch(e){document.execCommand('copy')}
@@ -631,7 +748,8 @@ setInterval(()=>{const t=today();if(t!==seen){if(cursor===seen)cursor=t;seen=t;r
 
 (async()=>{
   const saved=await store.load();
-  if(saved&&Array.isArray(saved.habits)&&saved.days)data={lastBackup:null,...saved};
+  if(saved&&Array.isArray(saved.habits)&&saved.days)data={lastBackup:null,quotes:SEED_QUOTES.slice(),...saved};
+  if(!Array.isArray(data.quotes))data.quotes=[];
   data.habits.forEach(h=>{if(h.id==='sleep8')h.auto='sleep'});
   render();
 })();
